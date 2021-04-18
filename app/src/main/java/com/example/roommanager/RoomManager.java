@@ -1,4 +1,4 @@
-package com.example.scrimish;
+package com.example.roommanager;
 
 import android.util.Log;
 
