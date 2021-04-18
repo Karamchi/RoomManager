@@ -14,10 +14,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-
 public class RoomManager implements RoomListener, ObservableRoomListener {
+
+    /** casos:
+     * 2 conectados, los dos se van sin notificar: queda una room con 2 jugadores que no se va a volver a usar
+     * Con la solucion actual: eventualmente pasan 60 segundos, alguein hace una request y listo
+     * 2 conectados, uno se va sin notificar: queda una room con 2 jugadores que no se va a volver a usar. El que quedó no va a poder matchear con nadie
+     * Con la solución actual: el que quedó updatea que la room todavía tiene 1
+     * 1 conectado, se va sin notificar: queda una room con 1 jugador. El próximo que entre va a ir a esa room y no va a poder matchear
+     * Con la solución actual: el próximo que entre va a updatear que la room todavía tiene 1. Si nadie entra la room desaparece
+     */
 
     private static RoomManager instance;
     private Room room;
@@ -26,15 +32,15 @@ public class RoomManager implements RoomListener, ObservableRoomListener {
     private MembershipListener mMembershipListener;
     public long mLastSentTimestamp;
 
-    private static final String BASE_URL = "https://api2.scaledrone.com/";
+    public final static String CHANNEL_ID = "";
 
     public static RoomManager getInstance() {
         if (instance == null) instance = new RoomManager();
         return instance;
     }
 
-    public static void getAllRooms(String channelId, retrofit2.Callback<Map<String, List<String>>> callback) {
-        retrofit(channelId).create(Service.class).groupList().enqueue(callback);
+    public static void getAllRooms(retrofit2.Callback<Map<String, List<String>>> callback) {
+        Network.builder().create(Service.class).groupList().enqueue(callback);
     }
 
     public void sendMessage(String message) {
@@ -50,8 +56,8 @@ public class RoomManager implements RoomListener, ObservableRoomListener {
         mCallback = callback;
     }
 
-    public void connectToRoom(final String channnelId, final String room) {
-        channel = new Scaledrone(channnelId);
+    public void connectToRoom(final String room) {
+        channel = new Scaledrone(CHANNEL_ID);
         Log.e("room", room);
         channel.connect(new Listener() {
             @Override
@@ -103,10 +109,6 @@ public class RoomManager implements RoomListener, ObservableRoomListener {
         }
     }
 
-    public void clearCallback() {
-        mCallback = null;
-    }
-
     public void setMembershipListener(MembershipListener listener) {
         mMembershipListener = listener;
     }
@@ -125,13 +127,6 @@ public class RoomManager implements RoomListener, ObservableRoomListener {
     public void onMemberLeave(Room room, Member member) {
         if (mMembershipListener != null)
             mMembershipListener.onMemberLeave();
-    }
-
-    public static Retrofit retrofit(String channelId) {
-        return new Retrofit.Builder()
-                .baseUrl(BASE_URL + channelId + "/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
     }
 
     public interface Callback {

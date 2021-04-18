@@ -17,4 +17,9 @@ public interface Service {
     @GET("/rooms")
     Call<List<String>> rooms();
 
+    @POST("/update")
+    Call<Void> update(@Body RequestBody room);
+
+    @POST("/remove")
+    Call<Void> onDisconnect(@Body RequestBody room);
 }
